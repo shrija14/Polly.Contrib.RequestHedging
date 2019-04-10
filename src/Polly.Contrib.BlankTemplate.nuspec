@@ -12,6 +12,10 @@
     <projectUrl>https://github.com/Polly-Contrib/Polly.Contrib.BlankTemplate</projectUrl>
     <copyright>Copyright © 2019, App vNext and contributors</copyright>
     <releaseNotes>
+     0.1.1
+     ---------------------
+     - Reference Polly v7.1.0
+
      0.1.0
      ---------------------
      - Initial launch
