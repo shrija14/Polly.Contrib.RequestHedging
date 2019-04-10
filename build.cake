@@ -11,7 +11,6 @@ var configuration = Argument<string>("configuration", "Release");
 
 #Tool "xunit.runner.console"
 #Tool "GitVersion.CommandLine"
-#Tool "Brutal.Dev.StrongNameSigner"
 
 //////////////////////////////////////////////////////////////////////
 // EXTERNAL NUGET LIBRARIES
@@ -21,7 +20,6 @@ var configuration = Argument<string>("configuration", "Release");
 #addin "System.Text.Json"
 #addin nuget:?package=Cake.Yaml
 #addin nuget:?package=YamlDotNet&version=5.2.1
-
 using System.Text.Json;
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -29,22 +27,16 @@ using System.Text.Json;
 ///////////////////////////////////////////////////////////////////////////////
 
 var projectName = "Polly.Contrib.BlankTemplate";
-var keyName = projectName + ".snk";
 
 var solutions = GetFiles("./**/*.sln");
 var solutionPaths = solutions.Select(solution => solution.GetDirectory());
 
 var srcDir = Directory("./src");
-var buildDir = Directory("./build");
 var artifactsDir = Directory("./artifacts");
 var testResultsDir = artifactsDir + Directory("test-results");
 
 // NuGet
-var nuspecFilename = projectName + ".nuspec";
-var nuspecSrcFile = srcDir + File(nuspecFilename);
-var nuspecDestFile = buildDir + File(nuspecFilename);
 var nupkgDestDir = artifactsDir + Directory("nuget-package");
-var snkFile = srcDir + File(keyName);
 
 // Gitversion
 var gitVersionPath = ToolsExePath("GitVersion.exe");
@@ -56,9 +48,6 @@ string nugetVersion;
 string appveyorBuildNumber;
 string assemblyVersion;
 string assemblySemver;
-
-// StrongNameSigner
-var strongNameSignerPath = ToolsExePath("StrongNameSigner.Console.exe");
 
 ///////////////////////////////////////////////////////////////////////////////
 // INNER CLASSES
@@ -93,7 +82,6 @@ Task("__Clean")
     .Does(() =>
 {
     DirectoryPath[] cleanDirectories = new DirectoryPath[] {
-        buildDir,
         testResultsDir,
         nupkgDestDir,
         artifactsDir
@@ -106,8 +94,7 @@ Task("__Clean")
     foreach(var path in solutionPaths)
     {
         Information("Cleaning {0}", path);
-        CleanDirectories(path + "/**/bin/" + configuration);
-        CleanDirectories(path + "/**/obj/" + configuration);
+        DotNetCoreClean(path.ToString());
     }
 });
 
@@ -117,7 +104,7 @@ Task("__RestoreNugetPackages")
     foreach(var solution in solutions)
     {
         Information("Restoring NuGet Packages for {0}", solution);
-        NuGetRestore(solution);
+        DotNetCoreRestore(solution.ToString());
     }
 });
 
@@ -213,13 +200,14 @@ Task("__BuildSolutions")
     {
         Information("Building {0}", solution);
 
-        MSBuild(solution, settings =>
-            settings
-                .SetConfiguration(configuration)
-                .WithProperty("TreatWarningsAsErrors", "true")
-                .UseToolVersion(MSBuildToolVersion.VS2017)
-                .SetVerbosity(Verbosity.Minimal)
-                .SetNodeReuse(false));
+        var dotNetCoreBuildSettings = new DotNetCoreBuildSettings {
+         Configuration = configuration,
+         Verbosity = DotNetCoreVerbosity.Minimal,
+         NoRestore = true,
+         MSBuildSettings = new DotNetCoreMSBuildSettings { TreatAllWarningsAs = MSBuildTreatAllWarningsAs.Error }
+        };
+
+        DotNetCoreBuild(solution.ToString(), dotNetCoreBuildSettings);
     }
 });
 
@@ -234,35 +222,6 @@ Task("__RunTests")
     }
 });
 
-Task("__CopyOutputToNugetFolder")
-    .Does(() =>
-{
-    var sourceDir = srcDir + Directory(projectName) + Directory("bin") + Directory(configuration);
-
-    var destDir = buildDir + Directory("lib");
-
-    Information("Copying {0} -> {1}.", sourceDir, destDir);
-    CopyDirectory(sourceDir, destDir);
-
-    CopyFile(nuspecSrcFile, nuspecDestFile);
-});
-
-Task("__StronglySignAssemblies")
-    .Does(() =>
-{
-    //see: https://github.com/brutaldev/StrongNameSigner
-    var strongNameSignerSettings = new ProcessSettings()
-        .WithArguments(args => args
-            .Append("-in")
-            .AppendQuoted(buildDir)
-            .Append("-k")
-            .AppendQuoted(snkFile)
-            .Append("-l")
-            .AppendQuoted("Changes"));
-
-    StartProcess(strongNameSignerPath, strongNameSignerSettings);
-});
-
 Task("__CreateSignedNugetPackage")
     .Does(() =>
 {
@@ -270,14 +229,13 @@ Task("__CreateSignedNugetPackage")
 
     Information("Building {0}.{1}.nupkg", packageName, nugetVersion);
 
-    var nuGetPackSettings = new NuGetPackSettings {
-        Id = packageName,
-        Title = packageName,
-        Version = nugetVersion,
+    var dotNetCorePackSettings = new DotNetCorePackSettings {
+        Configuration = configuration,
+        NoBuild = true,
         OutputDirectory = nupkgDestDir
     };
 
-    NuGetPack(nuspecDestFile, nuGetPackSettings);
+    DotNetCorePack($@"{srcDir}\{projectName}.sln", dotNetCorePackSettings);
 });
 
 //////////////////////////////////////////////////////////////////////
@@ -292,8 +250,6 @@ Task("Build")
     .IsDependentOn("__UpdateAppVeyorBuildNumber")
     .IsDependentOn("__BuildSolutions")
     .IsDependentOn("__RunTests")
-    .IsDependentOn("__CopyOutputToNugetFolder")
-    .IsDependentOn("__StronglySignAssemblies")
     .IsDependentOn("__CreateSignedNugetPackage");
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -314,6 +270,6 @@ RunTarget(target);
 //////////////////////////////////////////////////////////////////////
 
 string ToolsExePath(string exeFileName) {
-    var exePath = System.IO.Directory.GetFiles(@".\Tools", exeFileName, SearchOption.AllDirectories).FirstOrDefault();
+    var exePath = System.IO.Directory.GetFiles(@"./tools", exeFileName, SearchOption.AllDirectories).FirstOrDefault();
     return exePath;
 }
