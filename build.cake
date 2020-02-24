@@ -17,10 +17,8 @@ var configuration = Argument<string>("configuration", "Release");
 //////////////////////////////////////////////////////////////////////
 
 #addin "Cake.FileHelpers"
-#addin "System.Text.Json"
 #addin nuget:?package=Cake.Yaml
 #addin nuget:?package=YamlDotNet&version=5.2.1
-using System.Text.Json;
 
 ///////////////////////////////////////////////////////////////////////////////
 // GLOBAL VARIABLES
@@ -63,10 +61,12 @@ class GitVersionConfigYaml
 
 Setup(_ =>
 {
-   Information("==============================");
-   Information("Starting the cake build script");
-   Information("Building: " + projectName);
-   Information("==============================");
+    Information("");
+    Information("----------------------------------------");
+    Information("Starting the cake build script");
+    Information("Building: " + projectName);
+    Information("----------------------------------------");
+    Information("");
 });
 
 Teardown(_ =>
@@ -119,7 +119,7 @@ Task("__UpdateAssemblyVersionInformation")
         StartProcess(gitVersionPath, gitVersionSettings, out outputLines);
 
         var output = string.Join("\n", outputLines);
-        gitVersionOutput = new JsonParser().Parse<Dictionary<string, object>>(output);
+        gitVersionOutput = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(output);
     }
     catch
     {
@@ -144,7 +144,9 @@ Task("__UpdateAssemblyVersionInformation")
     Information("FullSemVer -> {0}", gitVersionOutput["FullSemVer"]);
     Information("AssemblySemVer -> {0}", gitVersionOutput["AssemblySemVer"]);
 
-    appveyorBuildNumber = gitVersionOutput["FullSemVer"].ToString();
+    appveyorBuildNumber = gitVersionOutput["BranchName"].ToString().Equals("master", StringComparison.OrdinalIgnoreCase)
+        ? gitVersionOutput["FullSemVer"].ToString() 
+        : gitVersionOutput["InformationalVersion"].ToString();
     nugetVersion = gitVersionOutput["NuGetVersion"].ToString();
     assemblyVersion = gitVersionOutput["Major"].ToString() + ".0.0.0";
     assemblySemver = gitVersionOutput["AssemblySemVer"].ToString();

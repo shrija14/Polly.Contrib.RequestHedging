@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard1.1;netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>netstandard1.1;netstandard2.0;net461;net472</TargetFrameworks>
     <AssemblyName>Polly.Contrib.BlankTemplate</AssemblyName>
     <RootNamespace>Polly.Contrib.BlankTemplate</RootNamespace>
     <Version>0.2.0</Version>
@@ -34,7 +34,7 @@
     <NetStandardImplicitPackageVersion>1.6.1</NetStandardImplicitPackageVersion>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Polly" Version="7.1.0" />
+    <PackageReference Include="Polly" Version="7.2.0" />
   </ItemGroup>
   <PropertyGroup Label="NuspecProperties">
     <NeutralLanguage>en-US</NeutralLanguage>
