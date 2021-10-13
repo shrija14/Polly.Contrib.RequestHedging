@@ -5,7 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Polly.Contrib.Hedging;
 
-namespace Polly
+namespace Polly.Contrib.Hedging
 {
     /// <summary>
     ///     Fluent API for defining an <see cref="AsyncHedgingPolicy{TResult}" />.
@@ -13,13 +13,13 @@ namespace Polly
     public static class AsyncHedgingTResultSyntax
     {
         /// <summary>
-        ///     Builds an <see cref="AsyncHedgingPolicy{TResult}" /> that will send hedge request if the action does not succeed within
-        ///     <paramref name="hedgingDelay" />.  It will iterate through each of the <paramref name="hedgedTaskFunctions"/>
+        /// Builds an <see cref="AsyncHedgingPolicy{TResult}" /> that will send hedge request if the action does not succeed within
+        /// <paramref name="hedgingDelay" />. It will iterate through each of the <paramref name="hedgedTaskFunctions"/>
         /// </summary>
         /// <param name="policyBuilder">The policy builder.</param>
-        /// <param name="hedgedTaskFunctions">hedge request function list</param>
-        /// <param name="hedgingDelay">delay before issuing hedge request</param>
-        /// <param name="onHedgeAsync">task performed after every spawning a hedged request</param>
+        /// <param name="hedgedTaskFunctions">Hedge request function list.</param>
+        /// <param name="hedgingDelay">Delay before issuing hedge request.</param>
+        /// <param name="onHedgeAsync">Task performed after every spawning of a hedged request.</param>
         /// <returns>The policy instance.</returns>
         /// <exception cref="ArgumentNullException">onRetry</exception>
         public static AsyncHedgingPolicy<TResult> HedgeAsync<TResult>(
@@ -28,7 +28,7 @@ namespace Polly
             TimeSpan hedgingDelay,
             Func<Context, Task> onHedgeAsync = null)
         {
-            if (hedgingDelay == default(TimeSpan) || hedgingDelay == System.Threading.Timeout.InfiniteTimeSpan) throw new ArgumentException(nameof(hedgingDelay));
+            if (hedgingDelay == default || hedgingDelay == System.Threading.Timeout.InfiniteTimeSpan) throw new ArgumentException(nameof(hedgingDelay));
 
             return new AsyncHedgingPolicy<TResult>(
                 policyBuilder,
@@ -38,12 +38,13 @@ namespace Polly
         }
 
         /// <summary>
-        ///     Builds an <see cref="AsyncHedgingPolicy{TResult}" /> that will send hedge request if the action does not succeed within
-        ///     <paramref name="hedgingDelay" />.  call <paramref name="hedgedTaskFunction"/>
-        /// </summary>        /// <param name="policyBuilder">The policy builder.</param>
-        /// <param name="hedgedTaskFunction">hedge request function</param>
-        /// <param name="hedgingDelay">delay before issuing hedge request</param>
-        /// <param name="onHedgeAsync">task performed after every spawning a hedged request</param>
+        /// Builds an <see cref="AsyncHedgingPolicy{TResult}" /> that will send hedge request if the action does not succeed within
+        /// <paramref name="hedgingDelay" /> and perform <paramref name="hedgedTaskFunction"/> via hedging.
+        /// </summary>        
+        /// <param name="policyBuilder">The policy builder.</param>
+        /// <param name="hedgedTaskFunction">Hedge request function.</param>
+        /// <param name="hedgingDelay">Delay before issuing hedge request.</param>
+        /// <param name="onHedgeAsync">Task performed after every spawning of a hedged request</param>
         /// <returns>The policy instance.</returns>
         /// <exception cref="ArgumentNullException">onRetry</exception>
         public static AsyncHedgingPolicy<TResult> HedgeAsync<TResult>(
@@ -54,13 +55,14 @@ namespace Polly
             => HedgeAsync<TResult>(policyBuilder, new[] { hedgedTaskFunction }, hedgingDelay, onHedgeAsync);
 
         /// <summary>
-        ///     Builds an <see cref="AsyncHedgingPolicy{TResult}" /> that will send hedge request if the action does not succeed within
-        ///     <paramref name="hedgingDelay" />.  call <paramref name="hedgedTaskFunction"/> <paramref name="hedgeCallAttempts"/> times
-        /// </summary>        /// <param name="policyBuilder">The policy builder.</param>
-        /// <param name="hedgedTaskFunction">hedge request function</param>
-        /// <param name="hedgeCallAttempts">number of time to call the hedge function</param>
-        /// <param name="hedgingDelay">delay before issuing hedge request</param>
-        /// <param name="onHedgeAsync">task performed after every spawning a hedged request</param>
+        /// Builds an <see cref="AsyncHedgingPolicy{TResult}" /> that will send hedge request if the action does not succeed within
+        /// <paramref name="hedgingDelay" /> and calls <paramref name="hedgedTaskFunction"/> <paramref name="hedgeCallAttempts"/> times.
+        /// </summary>        
+        /// <param name="policyBuilder">The policy builder.</param>
+        /// <param name="hedgedTaskFunction">Hedge request function.</param>
+        /// <param name="hedgeCallAttempts">Number of times to call the hedge function.</param>
+        /// <param name="hedgingDelay">Delay before issuing hedge request.</param>
+        /// <param name="onHedgeAsync">Task performed after every spawning a hedged request.</param>
         /// <returns>The policy instance.</returns>
         /// <exception cref="ArgumentNullException">onRetry</exception>
         public static AsyncHedgingPolicy<TResult> HedgeAsync<TResult>(
